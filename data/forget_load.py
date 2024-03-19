@@ -1,7 +1,7 @@
 import pathlib
 import torch
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch.utils.data.sampler import Sampler
 from torchvision.utils import make_grid
 from torchvision.datasets import MNIST
@@ -13,17 +13,6 @@ AVAILABLE_DS = ["mnist"]
 CUR_ABS_PATH = pathlib.Path(__file__).parent.resolve()
 
 
-class CustomSampler(Sampler):
-    def __init__(self, mask, data_source):
-        self.mask = mask
-        self.data_source = data_source
-
-    def __iter__(self):
-        return iter([i.item() for i in torch.nonzero(self.mask)])
-    
-    def __len__(self):
-        return len(self.data_source)
-    
 class MakeUnlearnLoader:
     def __init__(self, ds_name=None, batch_size=8, shuffle=True, label=None):
         if ds_name is None:
@@ -41,15 +30,18 @@ class MakeUnlearnLoader:
     def __call__(self):
         if self.ds_name == "mnist":
             dataset = MNIST(root=CUR_ABS_PATH, train=True, download=True, transform=ToTensor())
-            
-            forget_mask = torch.Tensor([1 if dataset[i][1] == self.label else 0 for i in range(len(dataset))])
-            remain_mask = torch.Tensor([1 if dataset[i][1] != self.label else 0 for i in range(len(dataset))])
+            I_f = []
+            I_r = []
+            for i, label in enumerate(dataset.targets):
+                if label == self.label:
+                    I_f.append(i)
+                else:
+                    I_r.append(i)
+            D_f = Subset(dataset, I_f)
+            D_r = Subset(dataset, I_r)
 
-        forget_sampler = CustomSampler(forget_mask, dataset)
-        remain_sampler = CustomSampler(remain_mask, dataset)
-
-        forget_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, sampler=forget_sampler)
-        remain_loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, sampler=remain_sampler)
+        forget_loader = DataLoader(D_f, batch_size=self.batch_size, shuffle=True)
+        remain_loader = DataLoader(D_r, batch_size=self.batch_size, shuffle=True)
 
         _, axs = plt.subplots(1,2, figsize=(10,6))
         imgs, _ = next(iter(forget_loader))
