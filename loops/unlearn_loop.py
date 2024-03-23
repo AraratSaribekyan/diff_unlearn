@@ -21,12 +21,16 @@ class UnlearnLoop:
             model=None,
             ds_name="mnist",
             device="cpu",
-            label_c=0
+            label_c=0,
+            dist_sampler = None,
+            dist_type = "uniform"
     ):
         if data_loaders is None:
             raise ValueError("No loader is specified")
         if model is None:
-            raise ValueError("Noe model is specified")
+            raise ValueError("No model is specified")
+        if dist_sampler is None:
+            raise ValueError("No distribution sampler is specified")
         
         self.forget_loader = data_loaders[0]
         self.remain_loader = data_loaders[1]
@@ -37,11 +41,13 @@ class UnlearnLoop:
         self.device = device
         self.scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='squaredcos_cap_v2')
         self.label_c = label_c
+        self.dist_sampler = dist_sampler
+        self.dist_type = dist_type
 
     def __call__(self):
         ckpts = os.listdir(CKP_PATH)
         ckpt_file = self.ds_name+".pt"
-        unlearn_ckpt_file = self.ds_name+"_"+str(self.label_c)+".pt"
+        unlearn_ckpt_file = self.ds_name+"_"+str(self.label_c)+"_"+self.dist_type+".pt"
 
         ckpts_path = os.path.join(CKP_PATH, ckpt_file)
         ckpts_save_path = os.path.join(CKP_PATH, unlearn_ckpt_file)
@@ -73,12 +79,12 @@ class UnlearnLoop:
                 x = x.to(self.device)
                 y = y.to(self.device)
                 noise = torch.randn_like(x)
-                uniform_noise = torch.rand_like(x)
+                forget_distr = self.dist_sampler(noise)
                 timesteps = torch.randint(0, 999, (x.shape[0],)).long().to(self.device)
                 noisy_x = self.scheduler.add_noise(x, noise, timesteps)
                 
                 pred_noise = sub_model(noisy_x, timesteps, y)
-                loss = loss_fn(pred_noise, uniform_noise)
+                loss = loss_fn(pred_noise, forget_distr)
                 
                 sub_opt.zero_grad()
                 loss.backward()
@@ -95,11 +101,11 @@ class UnlearnLoop:
             x = x.to(self.device)
             y = y.to(self.device)
             noise = torch.randn_like(x)
-            uniform_noise = torch.rand_like(x)
+            forget_distr = self.dist_sampler(noise)
             timesteps = torch.randint(0, 999, (x.shape[0],)).long().to(self.device)
             noisy_x = self.scheduler.add_noise(x, noise, timesteps)
             pred_noise = self.model(noisy_x, timesteps, y)
-            loss_f = loss_fn(pred_noise, uniform_noise) - loss_cs
+            loss_f = loss_fn(pred_noise, forget_distr) - loss_cs
 
             while True:
                 try:
