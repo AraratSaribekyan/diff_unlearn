@@ -27,8 +27,6 @@ class MakeDataLoader:
             dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=self.shuffle)
 
             imgs, lbls = next(iter(dataloader))
-            print("Sample size: ", imgs.shape)
-            print("Labels size: ", lbls)
 
             plt.imshow(make_grid(imgs)[0], cmap="Greys")
 

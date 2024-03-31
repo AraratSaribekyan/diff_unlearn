@@ -8,17 +8,18 @@ from diffusers import DDPMScheduler
 from tqdm.auto import tqdm
 from matplotlib import pyplot as plt
 
-ROOT_PATH = pathlib.Path(__file__).parent.parent.resolve()
-CKP_PATH = os.path.join(ROOT_PATH, os.path.join("models", "checkpoints"))
+
 
 
 class TrainLoop:
-    def __init__(self, epochs=10, data_loader=None, resume=False, model=None, ds_name="mnist", device="cpu"):
+    def __init__(self, epochs=10, data_loader=None, resume=False, model=None, ds_name="mnist", device="cpu", model_save=None):
         if data_loader is None:
             raise ValueError("No loader is specified")
         if model is None:
             raise ValueError("No model is specified")
-    
+        if model_save is None:
+            raise ValueError("No model_save is specified")
+        
         self.loader = data_loader
         self.resume = resume
         self.model = model
@@ -26,14 +27,14 @@ class TrainLoop:
         self.epochs = epochs
         self.scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='squaredcos_cap_v2')
         self.device = device
+        self.model_save = model_save
 
     def __call__(self):
-        ckpts = os.listdir(CKP_PATH)
-        ckpt_file = self.ds_name+".pt"
+        ckpt_file = self.model_save
 
         if self.resume:
-            if ckpt_file in ckpts:
-                self.model.load_state_dict(torch.load(os.path.join(CKP_PATH, ckpt_file)))
+            if os.path.exists(ckpt_file):
+                self.model.load_state_dict(torch.load(ckpt_file))
         
         opt = Adam(self.model.parameters(), lr=1e-3)
         loss_fn = MSELoss()
@@ -65,4 +66,4 @@ class TrainLoop:
 
         plt.plot(losses)
 
-        torch.save(self.model.state_dict(), os.path.join(CKP_PATH, ckpt_file))
+        torch.save(self.model.state_dict(), ckpt_file)

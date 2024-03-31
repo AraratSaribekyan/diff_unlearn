@@ -1,0 +1,8 @@
+{
+    "epochs": 20,
+    "ds_name": "mnist",
+    "device": "cuda",
+    "resume": 0,
+    "batch_size": 64,
+    "shuffle": 1
+}
