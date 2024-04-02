@@ -17,40 +17,35 @@ class UnlearnLoop:
             self,
             S = 1000,
             K = 10,
+            lr = 1e-3,
+            lamb = 0.1,
             data_loaders=None,
             model=None,
             ds_name="mnist",
             device="cpu",
-            label_c=0
+            label_c=0,
+            save_path = None
     ):
         if data_loaders is None:
             raise ValueError("No loader is specified")
         if model is None:
             raise ValueError("Noe model is specified")
         
+        self.S = S
+        self.K = K
+        self.lr = lr
+        self.lamb = lamb
         self.forget_loader = data_loaders[0]
         self.remain_loader = data_loaders[1]
         self.model = model
         self.ds_name = ds_name
-        self.S = S
-        self.K = K
         self.device = device
         self.scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='squaredcos_cap_v2')
         self.label_c = label_c
+        self.save_path = save_path
 
     def __call__(self):
-        ckpts = os.listdir(CKP_PATH)
-        ckpt_file = self.ds_name+".pt"
-        unlearn_ckpt_file = self.ds_name+"_"+str(self.label_c)+".pt"
-
-        ckpts_path = os.path.join(CKP_PATH, ckpt_file)
-        ckpts_save_path = os.path.join(CKP_PATH, unlearn_ckpt_file)
-
-        if not os.path.isfile(ckpts_path):
-            raise FileNotFoundError(f"No such file or directory {ckpts_path}")
-
-        self.model.load_state_dict(torch.load(ckpts_path))
-        opt = Adam(self.model.parameters(), lr=1e-3)
+        opt = Adam(self.model.parameters(), lr=self.lr)
         loss_fn = MSELoss()
         losses = []
 
@@ -60,7 +55,7 @@ class UnlearnLoop:
 
         for s in tqdm(range(self.S)):
             sub_model = copy.deepcopy(self.model)
-            sub_opt = Adam(sub_model.parameters(), lr=1e-3)
+            sub_opt = Adam(sub_model.parameters(), lr=self.lr)
 
             for _ in range(self.K):
                 while True:
@@ -114,7 +109,7 @@ class UnlearnLoop:
             timesteps = torch.randint(0, 999, (x.shape[0],)).long().to(self.device)
             noisy_x = self.scheduler.add_noise(x, noise, timesteps)
             pred_noise = self.model(noisy_x, timesteps, y)
-            loss = loss_fn(noise, pred_noise) + 0.1*loss_f
+            loss = loss_fn(noise, pred_noise) + self.lamb*loss_f
             opt.zero_grad()
             loss.backward()
             opt.step()
@@ -126,4 +121,4 @@ class UnlearnLoop:
                 print(f"Step {s}. Avarage of the last 50 loss values: {avg_loss:05f}")
 
         plt.plot(losses)
-        torch.save(self.model.state_dict(), ckpts_save_path)
+        torch.save(self.model.state_dict(), self.save_path)

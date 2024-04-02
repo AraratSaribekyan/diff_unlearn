@@ -28,6 +28,7 @@ class MakeDataLoader:
 
             imgs, lbls = next(iter(dataloader))
 
+            plt.axis("off")
             plt.imshow(make_grid(imgs)[0], cmap="Greys")
 
             return dataloader

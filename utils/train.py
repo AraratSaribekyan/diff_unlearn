@@ -1,5 +1,5 @@
 from data import MakeDataLoader
-from models import MNIST_Unet
+from unet import MNIST_Unet
 from loops import TrainLoop
 
 class TrainWrapper:

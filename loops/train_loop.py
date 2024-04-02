@@ -63,7 +63,10 @@ class TrainLoop:
 
             avg_loss = sum(losses[-100:])/100
             print(f'Finished epoch {epoch}. Average of the last 100 loss values: {avg_loss:05f}') 
-
+            if epoch % 5 == 0 and epoch!=0:
+                torch.save(self.model.state_dict(), ckpt_file+str(epoch)+".pt")
+                print(f"Saved model weights on epoch {epoch}")
         plt.plot(losses)
 
-        torch.save(self.model.state_dict(), ckpt_file)
+        torch.save(self.model.state_dict(), ckpt_file+".pt")
+        print("Finish")

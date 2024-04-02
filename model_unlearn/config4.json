@@ -1,0 +1,13 @@
+{
+    "weights": "/home/anubis/memdir/diploma/diff_unlearn/model/model15.pt",
+    "ds_name": "mnist",
+    "batch_size": 80,
+    "shuffle": 1,
+    "label": 0,
+    "S": 700,
+    "K": 20,
+    "lr": 1e-3,
+    "lamb": 0.1,
+    "device": "cuda",
+    "save_path": "/home/anubis/memdir/diploma/diff_unlearn/model_unlearn/700_20.pt"
+}
