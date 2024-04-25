@@ -2,8 +2,8 @@ import os
 import torch
 
 from unet import MNIST_Unet
-from data import MakeUnlearnLoader
-from loops import UnlearnLoop
+from .data import MakeUnlearnLoader
+from .loops import UnlearnLoop
 
 
 class UnlearnWrapper:

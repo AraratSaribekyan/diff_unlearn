@@ -1,6 +1,6 @@
-from data import MakeDataLoader
 from unet import MNIST_Unet
-from loops import TrainLoop
+from .data import MakeDataLoader
+from .loops import TrainLoop
 
 class TrainWrapper:
     def __init__(
