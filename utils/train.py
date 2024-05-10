@@ -1,5 +1,5 @@
 from unet import MNIST_Unet
-from .data import MakeDataLoader
+from .data import MakeDataLoader, MakeUnlearnLoader
 from .loops import TrainLoop
 
 class TrainWrapper:
@@ -11,13 +11,22 @@ class TrainWrapper:
             resume,
             batch_size,
             shuffle,
-            model_save
+            model_save,
+            unlearn_label = None
     ):
-        loader = MakeDataLoader(
-            ds_name=ds_name,
-            batch_size=batch_size,
-            shuffle=shuffle
-        )()
+        if unlearn_label is None:
+            loader = MakeDataLoader(
+                ds_name=ds_name,
+                batch_size=batch_size,
+                shuffle=shuffle
+            )()
+        else:
+            loader = MakeUnlearnLoader(
+                ds_name = ds_name,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                label=unlearn_label
+            )()[1]
         model = MNIST_Unet()
         self.train = TrainLoop(
             epochs=epochs,

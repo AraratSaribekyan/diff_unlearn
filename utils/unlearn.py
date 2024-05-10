@@ -3,7 +3,7 @@ import torch
 
 from unet import MNIST_Unet
 from .data import MakeUnlearnLoader
-from .loops import UnlearnLoop
+from .loops import UnlearnLoop, UnlearnLoopModified
 
 
 class UnlearnWrapper:
@@ -41,6 +41,51 @@ class UnlearnWrapper:
             lr=lr,
             lamb=lamb,
             save_path=save_path
+        )
+    
+    def __call__(self):
+        self.loop()
+
+
+class ManualUnlearnWrapper:
+    def __init__(
+            self,
+            weights,
+            ds_name,
+            batch_size,
+            shuffle,
+            label,
+            S,
+            K,
+            lr,
+            lamb,
+            device,
+            save_path,
+            filters,
+            img
+    ):
+        model = MNIST_Unet()
+        model.load_state_dict(torch.load(weights))
+        
+        forget_loader, remain_loader = MakeUnlearnLoader(
+            ds_name=ds_name,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            label=label
+        )()
+
+        self.loop = UnlearnLoopModified(
+            data_loaders=(forget_loader, remain_loader),
+            model=model,
+            label_c=label,
+            device=device,
+            S=S,
+            K=K,
+            lr=lr,
+            lamb=lamb,
+            save_path=save_path,
+            filters=filters,
+            img=img
         )
     
     def __call__(self):

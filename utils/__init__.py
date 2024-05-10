@@ -1,3 +1,3 @@
 
 from .train import TrainWrapper
-from .unlearn import UnlearnWrapper
+from .unlearn import UnlearnWrapper, ManualUnlearnWrapper

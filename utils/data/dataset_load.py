@@ -2,7 +2,7 @@ import pathlib
 
 from torch.utils.data import DataLoader
 from torchvision.utils import make_grid
-from torchvision.datasets import MNIST
+from torchvision.datasets import MNIST, FashionMNIST
 from torchvision.transforms import ToTensor
 
 from matplotlib import pyplot as plt
